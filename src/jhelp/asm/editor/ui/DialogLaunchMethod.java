@@ -34,6 +34,7 @@ import jhelp.gui.action.GenericAction;
 import jhelp.gui.smooth.JHelpConstantsSmooth;
 import jhelp.util.debug.Debug;
 import jhelp.util.gui.UtilGUI;
+import jhelp.util.text.UtilText;
 
 /**
  * Dialog for test a method
@@ -356,17 +357,13 @@ public class DialogLaunchMethod
          final Object instance = this.classManager.newInstance(this.className);
          final Object result = this.classManager.invoke(instance, this.method.getName(), values);
 
-         if(this.method.getReturnType().equals(Void.class) == true)
+         if((this.method.getReturnType().equals(Void.class) == true) || (this.method.getReturnType().equals(void.class) == true))
          {
             this.result.setText("Execution succeed !");
          }
-         else if(result == null)
-         {
-            this.result.setText("null");
-         }
          else
          {
-            this.result.setText(result.toString());
+            this.result.setText(UtilText.concatenate(result));
          }
       }
       catch(final Exception exception)

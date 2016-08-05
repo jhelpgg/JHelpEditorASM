@@ -46,6 +46,9 @@ import jhelp.compiler.instance.ClassManager;
 import jhelp.compiler.instance.ClassManagerListener;
 import jhelp.gui.ConsolePrintStream;
 import jhelp.gui.FileChooser;
+import jhelp.gui.FoldLocation;
+import jhelp.gui.JHelpFoldablePanel;
+import jhelp.gui.JHelpLimitSizePanel;
 import jhelp.gui.JHelpSeparator;
 import jhelp.gui.action.GenericAction;
 import jhelp.gui.smooth.JHelpConstantsSmooth;
@@ -354,16 +357,18 @@ public class CompilerEditorPanel
    private final ComponentEditor           componentEditor;
    /** Current open file */
    private File                            currentFile;
-   /** Text for print information */
-   private final JTextArea                 errorMessage;
    /** Event manager */
    private final EventManager              eventManager;
    /** Dialog for choose a file */
    private final FileChooser               fileChooser;
    /** Filter on files */
    private final FileFilter                fileFilter;
+   /** Text for print information */
+   private final JTextArea                 informationMessage;
    /** Panel that contains actions */
    private final JPanel                    panelActions;
+   /** Panel that contains information message */
+   private final JHelpFoldablePanel        panelInformationMessage;
    /** Preferences where store/read */
    private final Preferences               preferences;
    /** Title label */
@@ -440,13 +445,18 @@ public class CompilerEditorPanel
       this.panelActions.add(new JHelpSeparator(false));
       this.panelActions.add(new JButton(this.actionCompile));
 
-      this.errorMessage = new JTextArea("");
-      this.errorMessage.setEditable(false);
-      this.errorMessage.setFont(JHelpConstantsSmooth.FONT_BODY_1.getFont());
+      this.informationMessage = new JTextArea("", 500, 16);
+      this.informationMessage.setEditable(false);
+      this.informationMessage.setFont(JHelpConstantsSmooth.FONT_BODY_1.getFont());
+      this.informationMessage.setLineWrap(true);
+
+      this.panelInformationMessage = new JHelpFoldablePanel("Message",
+            new JHelpLimitSizePanel(new JScrollPane(this.informationMessage), 256, Integer.MAX_VALUE), FoldLocation.LEFT);
+      this.panelInformationMessage.fold();
 
       this.add(this.panelActions, BorderLayout.NORTH);
       this.add(new JScrollPane(this.componentEditor), BorderLayout.CENTER);
-      this.add(this.errorMessage, BorderLayout.EAST);
+      this.add(this.panelInformationMessage, BorderLayout.EAST);
 
       this.currentFile = this.preferences.getFileValue(CompilerEditorPanel.PREFERENCE_LAST_FILE);
 
@@ -463,8 +473,20 @@ public class CompilerEditorPanel
     */
    private void initializeConsole()
    {
-      final ConsolePrintStream consolePrintStream = new ConsolePrintStream(this.errorMessage);
+      final ConsolePrintStream consolePrintStream = new ConsolePrintStream(this.informationMessage);
       System.setOut(consolePrintStream.getPrintStream());
+   }
+
+   /**
+    * Print a message
+    *
+    * @param text
+    *           Message to print
+    */
+   private void printMessage(final String text)
+   {
+      this.informationMessage.setText(text);
+      this.panelInformationMessage.unFold();
    }
 
    /**
@@ -486,7 +508,7 @@ public class CompilerEditorPanel
     */
    void reportCompileFailed(final String message)
    {
-      this.errorMessage.setText(message);
+      this.printMessage(message);
    }
 
    /**
@@ -500,7 +522,7 @@ public class CompilerEditorPanel
       Debug.printException(compilerException, "Oups !");
 
       // Show error message and go line in code on error
-      this.errorMessage.setText(UtilEditor.extractMessage(compilerException));
+      this.printMessage(UtilEditor.extractMessage(compilerException));
       this.componentEditor.scrollToLine(compilerException.getLineNumber());
 
       if(compilerException instanceof StackInspectorException)
@@ -529,7 +551,7 @@ public class CompilerEditorPanel
     */
    void reportCompileSucceed(final String className)
    {
-      this.errorMessage.setText(UtilText.concatenate("Succeed to compile :\n", className, "\n\n------------\n\n"));
+      this.printMessage(UtilText.concatenate("Succeed to compile :\n", className, "\n\n------------\n\n"));
       this.endCompilation();
       this.fireCompilationSucceed(className);
    }
@@ -553,11 +575,13 @@ public class CompilerEditorPanel
          }
          catch(final Exception exception)
          {
-            this.errorMessage.setText(UtilEditor.extractMessage(exception));
+            Debug.printException(exception, "Fail");
+            this.printMessage(UtilEditor.extractMessage(exception));
          }
          catch(final Error error)
          {
-            this.errorMessage.setText(UtilEditor.extractMessage(error));
+            Debug.printError(error, "Fail");
+            this.printMessage(UtilEditor.extractMessage(error));
          }
       }
    }
@@ -582,7 +606,7 @@ public class CompilerEditorPanel
 
       if(matcher.find() == false)
       {
-         this.errorMessage.setText("No class declaration !");
+         this.printMessage("No class declaration !");
          return false;
       }
 
@@ -595,8 +619,8 @@ public class CompilerEditorPanel
 
       this.compiling.set(true);
       this.actionCompile.setEnabled(false);
-      this.errorMessage.setText(className);
-      this.errorMessage.append("\ncompiling ...");
+      this.printMessage(className);
+      this.informationMessage.append("\ncompiling ...");
       final byte[] data = text.getBytes();
       final ByteArrayInputStream stream = new ByteArrayInputStream(data);
       this.classManager.compileASMs(this.eventManager, stream);
@@ -707,8 +731,7 @@ public class CompilerEditorPanel
       catch(final Exception exception)
       {
          Debug.printException(exception, "Failed to load : " + file.getAbsolutePath());
-         this.errorMessage.setText(
-               UtilText.concatenate("Failed to load file at :\n", file.getAbsolutePath(), "\nBecause :\n", UtilEditor.extractMessage(exception)));
+         this.printMessage(UtilText.concatenate("Failed to load file at :\n", file.getAbsolutePath(), "\nBecause :\n", UtilEditor.extractMessage(exception)));
          return false;
       }
       finally
@@ -787,7 +810,7 @@ public class CompilerEditorPanel
       catch(final Exception exception)
       {
          Debug.printException(exception, "Failed to save at : " + this.currentFile.getAbsolutePath());
-         this.errorMessage.setText(
+         this.printMessage(
                UtilText.concatenate("Failed to save file at :\n", this.currentFile.getAbsolutePath(), "\nBecause :\n", UtilEditor.extractMessage(exception)));
          this.currentFile = previousFile;
          return false;
