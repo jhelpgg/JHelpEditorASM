@@ -12,6 +12,7 @@ package jhelp.asm.editor.ui;
 
 import java.awt.Color;
 import java.lang.reflect.Field;
+import java.util.regex.Pattern;
 
 import jhelp.asm.editor.resources.EditorResources;
 import jhelp.compiler.compil.CompilerConstants;
@@ -44,7 +45,15 @@ public class ComponentEditor
       this.createStyle("KeyWord", "Arial", 24, true, false, false, new Color(0xFF30AE30, true), ComponentEditor.WHITE);
       this.createStyle("OpCode", "Arial", 24, true, false, false, new Color(0xFFAE3030, true), ComponentEditor.WHITE);
       this.createStyle("PrimitiveSymbol", "Arial", 24, true, false, false, new Color(0xFF3030AE, true), ComponentEditor.WHITE);
+      this.createStyle("Comment", "Arial", 24, false, true, false, new Color(0xFF444444, true), ComponentEditor.WHITE);
+      this.createStyle("String", "Arial", 24, false, true, false, new Color(0xFF224488, true), ComponentEditor.WHITE);
       final JHelpSuggestion<String> suggestion = new JHelpSuggestion<String>(this);
+
+      this.associate("Comment", Pattern.compile("//.*"), 0);
+      this.associate("Comment", Pattern.compile("/\\*([^*]|\\*[^/]|\\n)*\\*/"), 0);
+      this.associate("Comment", Pattern.compile(";.*"), 0);
+      this.associate("String", Pattern.compile("\".*\""), 0);
+      this.associate("String", Pattern.compile("'.*'"), 0);
 
       this.setSymbolStyle("PrimitiveSymbol");
       this.associate("PrimitiveSymbol", "boolean", "char", "byte", "short", "int", "long", "float", "double");
@@ -76,6 +85,7 @@ public class ComponentEditor
 
          suggestion.addSuggestion("this", "Auto reference", "Reference to this current object");
          this.associate("KeyWord", "this");
+         this.associate("KeyWord", Pattern.compile("\\<init\\>"), 0);
 
          for(final Field field : OpcodeConstants.class.getDeclaredFields())
          {

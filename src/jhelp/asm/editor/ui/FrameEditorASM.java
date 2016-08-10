@@ -21,7 +21,7 @@ import jhelp.gui.JHelpLimitSizePanel;
 
 /**
  * Frame that show editor and list of compiled class.<br>
- * Minimum code here, the aime is the editor not linked to a frame to be easy to use in other projects
+ * Minimum code here, the aim is the editor not linked to a frame to be easy to use in other projects
  *
  * @author JHelp <br>
  */

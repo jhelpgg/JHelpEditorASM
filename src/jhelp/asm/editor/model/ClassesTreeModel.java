@@ -235,7 +235,7 @@ public class ClassesTreeModel
 
    /**
     * Insert or replace a class information.<br>
-    * If a class with extact same complete name we replace it, else it is just an addition
+    * If a class with exact same complete name we replace it, else it is just an addition
     *
     * @param classInformation
     *           Class to add or replace
