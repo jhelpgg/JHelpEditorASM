@@ -75,7 +75,7 @@ public class EditorResources
             {
                bufferedReader.close();
             }
-            catch(final Exception exception)
+            catch(final Exception ignored)
             {
             }
          }

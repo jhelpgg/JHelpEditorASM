@@ -17,9 +17,11 @@ import java.awt.event.ActionEvent;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
@@ -37,11 +39,16 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 
+import com.sun.org.apache.bcel.internal.classfile.ClassFormatException;
+import com.sun.org.apache.bcel.internal.generic.ClassGen;
+
 import jhelp.asm.editor.event.CompilationListener;
 import jhelp.asm.editor.util.UtilEditor;
+import jhelp.compiler.compil.Compiler;
 import jhelp.compiler.compil.CompilerException;
 import jhelp.compiler.compil.StackInfo;
 import jhelp.compiler.compil.StackInspectorException;
+import jhelp.compiler.decompil.Decompiler;
 import jhelp.compiler.instance.ClassManager;
 import jhelp.compiler.instance.ClassManagerListener;
 import jhelp.gui.ConsolePrintStream;
@@ -101,6 +108,76 @@ public class CompilerEditorPanel
       protected void doActionPerformed(final ActionEvent actionEvent)
       {
          CompilerEditorPanel.this.compile();
+      }
+   }
+
+   /**
+    * Action : Export to ".class"<br>
+    * Short cut : Ctrl + E
+    *
+    * @author JHelp <br>
+    */
+   class ActionExport
+         extends GenericAction
+   {
+      /**
+       * Create a new instance of ActionExport
+       */
+      ActionExport()
+      {
+         super("Export");
+         this.setShortcut(UtilGUI.createKeyStroke('E', true));
+      }
+
+      /**
+       * Called when action trigger by user <br>
+       * <br>
+       * <b>Parent documentation:</b><br>
+       * {@inheritDoc}
+       *
+       * @param actionEvent
+       *           Event description
+       * @see jhelp.gui.action.GenericAction#doActionPerformed(java.awt.event.ActionEvent)
+       */
+      @Override
+      protected void doActionPerformed(final ActionEvent actionEvent)
+      {
+         CompilerEditorPanel.this.exportClass();
+      }
+   }
+
+   /**
+    * Action : Import form ".class"<br>
+    * Short cut : Ctrl + I
+    *
+    * @author JHelp <br>
+    */
+   class ActionImport
+         extends GenericAction
+   {
+      /**
+       * Create a new instance of ActionImport
+       */
+      ActionImport()
+      {
+         super("Import");
+         this.setShortcut(UtilGUI.createKeyStroke('I', true));
+      }
+
+      /**
+       * Called when action trigger by user <br>
+       * <br>
+       * <b>Parent documentation:</b><br>
+       * {@inheritDoc}
+       *
+       * @param actionEvent
+       *           Event description
+       * @see jhelp.gui.action.GenericAction#doActionPerformed(java.awt.event.ActionEvent)
+       */
+      @Override
+      protected void doActionPerformed(final ActionEvent actionEvent)
+      {
+         CompilerEditorPanel.this.importClass();
       }
    }
 
@@ -194,7 +271,7 @@ public class CompilerEditorPanel
        */
       ActionSave(final boolean saveAs)
       {
-         super("Save" + (saveAs == true
+         super("Save" + (saveAs
                ? " as"
                : ""));
          this.saveAs = saveAs;
@@ -331,7 +408,7 @@ public class CompilerEditorPanel
    /** Background color give to line number where compilation failed */
    private static final Color              COLOR_ERROR_LINE          = new Color(0xFFFF8844, true);
    /** Regular expression for capture the class declaration. In group 1 : the name of the class */
-   private static final Pattern            PATTERN_CLASS_DECLARATION = Pattern.compile("^\\s*class\\s+([a-zA-Z0-9._]+)");
+   private static final Pattern            PATTERN_CLASS_DECLARATION = Pattern.compile("^\\s*class\\s+([a-zA-Z0-9._]+)", Pattern.MULTILINE);
    /** Key in preferences for store last directory */
    private static final String             PREFERENCE_LAST_DIRECTORY = "jhelp.asm.editor.ui.CompilerEditorPanel.lastDirectory";
    /** Key in preferences for store last open file */
@@ -339,6 +416,10 @@ public class CompilerEditorPanel
 
    /** Compile action */
    private final ActionCompile             actionCompile;
+   /** Export file action */
+   private final ActionExport              actionExport;
+   /** Import file action */
+   private final ActionImport              actionImport;
    /** New file action */
    private final ActionNew                 actionNew;
    /** Open file action */
@@ -361,8 +442,10 @@ public class CompilerEditorPanel
    private final EventManager              eventManager;
    /** Dialog for choose a file */
    private final FileChooser               fileChooser;
-   /** Filter on files */
-   private final FileFilter                fileFilter;
+   /** Filter on ASM files */
+   private final FileFilter                fileFilterASM;
+   /** Filter on ".class" files */
+   private final FileFilter                fileFilterClass;
    /** Text for print information */
    private final JTextArea                 informationMessage;
    /** Panel that contains actions */
@@ -396,6 +479,8 @@ public class CompilerEditorPanel
       this.actionOpen = new ActionOpen();
       this.actionSave = new ActionSave(false);
       this.actionSaveAs = new ActionSave(true);
+      this.actionImport = new ActionImport();
+      this.actionExport = new ActionExport();
       this.actionCompile = new ActionCompile();
       this.eventManager = new EventManager();
       this.classManager = new ClassManager();
@@ -416,14 +501,22 @@ public class CompilerEditorPanel
       actionMap.put(this.actionSaveAs.getName(), this.actionSaveAs);
       inputMap.put(this.actionSaveAs.getShortcut(), this.actionSaveAs.getName());
 
+      actionMap.put(this.actionImport.getName(), this.actionImport);
+      inputMap.put(this.actionImport.getShortcut(), this.actionImport.getName());
+
+      actionMap.put(this.actionExport.getName(), this.actionExport);
+      inputMap.put(this.actionExport.getShortcut(), this.actionExport.getName());
+
       actionMap.put(this.actionCompile.getName(), this.actionCompile);
       inputMap.put(this.actionCompile.getShortcut(), this.actionCompile.getName());
       //
 
       this.fileChooser = new FileChooser();
-      this.fileFilter = new FileFilter();
-      this.fileFilter.addExtension("asm");
-      this.fileChooser.setFileFilter(this.fileFilter);
+      this.fileFilterASM = new FileFilter();
+      this.fileFilterASM.addExtension("asm");
+      this.fileFilterClass = new FileFilter();
+      this.fileFilterClass.addExtension("class");
+      this.fileChooser.setFileFilter(this.fileFilterASM);
 
       final File directory = this.preferences.getFileValue(CompilerEditorPanel.PREFERENCE_LAST_DIRECTORY);
 
@@ -442,6 +535,9 @@ public class CompilerEditorPanel
       this.panelActions.add(new JButton(this.actionOpen));
       this.panelActions.add(new JButton(this.actionSave));
       this.panelActions.add(new JButton(this.actionSaveAs));
+      this.panelActions.add(new JHelpSeparator(false));
+      this.panelActions.add(new JButton(this.actionImport));
+      this.panelActions.add(new JButton(this.actionExport));
       this.panelActions.add(new JHelpSeparator(false));
       this.panelActions.add(new JButton(this.actionCompile));
 
@@ -500,6 +596,54 @@ public class CompilerEditorPanel
       this.compiling.set(false);
    }
 
+   void exportClass()
+   {
+      this.fileChooser.setFileFilter(this.fileFilterClass);
+      final File file = this.fileChooser.showSaveFile();
+
+      if(file == null)
+      {
+         return;
+      }
+
+      final Compiler compiler = new Compiler();
+      final ByteArrayInputStream stream = new ByteArrayInputStream(this.componentEditor.getText().getBytes());
+
+      try
+      {
+         final ClassGen classGen = compiler.compile(stream);
+         classGen.getJavaClass().dump(new FileOutputStream(file));
+      }
+      catch(final CompilerException | IOException exception)
+      {
+         Debug.printException(exception);
+      }
+   }
+
+   void importClass()
+   {
+      this.fileChooser.setFileFilter(this.fileFilterClass);
+      final File file = this.fileChooser.showOpenFile();
+
+      if(file == null)
+      {
+         return;
+      }
+
+      final Decompiler decompiler = new Decompiler();
+      final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream(4096);
+
+      try
+      {
+         decompiler.decompile(new FileInputStream(file), file.getName(), byteArrayOutputStream);
+         this.componentEditor.setText(new String(byteArrayOutputStream.toByteArray()));
+      }
+      catch(final ClassFormatException | IOException exception)
+      {
+         Debug.printException(exception);
+      }
+   }
+
    /**
     * Called if compilation failed with an unexpected reason
     *
@@ -530,7 +674,6 @@ public class CompilerEditorPanel
          // If stack inspection failed, show the path in cyan and stack state on each step
          final StackInspectorException stackInspectorException = (StackInspectorException) compilerException;
          final List<StackInfo> path = stackInspectorException.getPath();
-         stackInspectorException.getStackStatus();
 
          for(final StackInfo stackInfo : path)
          {
@@ -594,7 +737,7 @@ public class CompilerEditorPanel
     */
    public boolean compile()
    {
-      if(this.compiling.get() == true)
+      if(this.compiling.get())
       {
          return false;
       }
@@ -604,7 +747,7 @@ public class CompilerEditorPanel
       final String text = this.componentEditor.getText();
       final Matcher matcher = CompilerEditorPanel.PATTERN_CLASS_DECLARATION.matcher(text);
 
-      if(matcher.find() == false)
+      if(!matcher.find())
       {
          this.printMessage("No class declaration !");
          return false;
@@ -612,7 +755,7 @@ public class CompilerEditorPanel
 
       final String className = matcher.group(1);
 
-      if(this.classManager.isResolved(className) == true)
+      if(this.classManager.isResolved(className))
       {
          this.classManager.newClassLoader();
       }
@@ -665,6 +808,7 @@ public class CompilerEditorPanel
     */
    public boolean open()
    {
+      this.fileChooser.setFileFilter(this.fileFilterASM);
       final File file = this.fileChooser.showOpenFile();
 
       if(file == null)
@@ -684,7 +828,7 @@ public class CompilerEditorPanel
     */
    public boolean openAndCompile(final File file)
    {
-      if(this.openFile(file) == false)
+      if(!this.openFile(file))
       {
          return false;
       }
@@ -742,7 +886,7 @@ public class CompilerEditorPanel
             {
                bufferedReader.close();
             }
-            catch(final Exception exception)
+            catch(final Exception ignored)
             {
             }
          }
@@ -764,7 +908,7 @@ public class CompilerEditorPanel
 
       synchronized(this.compilationListeners)
       {
-         if(this.compilationListeners.contains(compilationListener) == false)
+         if(!this.compilationListeners.contains(compilationListener))
          {
             this.compilationListeners.add(compilationListener);
          }
@@ -782,8 +926,9 @@ public class CompilerEditorPanel
    {
       final File previousFile = this.currentFile;
 
-      if((this.currentFile == null) || (saveAs == true))
+      if((this.currentFile == null) || (saveAs))
       {
+         this.fileChooser.setFileFilter(this.fileFilterASM);
          final File file = this.fileChooser.showSaveFile();
 
          if(file == null)
@@ -823,7 +968,7 @@ public class CompilerEditorPanel
             {
                bufferedWriter.flush();
             }
-            catch(final Exception exception)
+            catch(final Exception ignored)
             {
             }
 
@@ -831,7 +976,7 @@ public class CompilerEditorPanel
             {
                bufferedWriter.close();
             }
-            catch(final Exception exception)
+            catch(final Exception ignored)
             {
             }
          }

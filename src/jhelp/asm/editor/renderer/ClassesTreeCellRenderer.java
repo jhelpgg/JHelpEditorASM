@@ -88,7 +88,7 @@ public class ClassesTreeCellRenderer
 
          for(final Class<?> parameter : method.getParameterTypes())
          {
-            if(first == false)
+            if(!first)
             {
                stringBuilder.append(", ");
             }
@@ -101,7 +101,7 @@ public class ClassesTreeCellRenderer
 
          final Class<?> ret = method.getReturnType();
 
-         if((ret != null) && (ret.equals(Void.class) == false))
+         if((ret != null) && (!ret.equals(Void.class)))
          {
             stringBuilder.append(" : ");
             stringBuilder.append(ret.getName());

@@ -357,7 +357,9 @@ public class DialogLaunchMethod
          final Object instance = this.classManager.newInstance(this.className);
          final Object result = this.classManager.invoke(instance, this.method.getName(), values);
 
-         if((this.method.getReturnType().equals(Void.class) == true) || (this.method.getReturnType().equals(void.class) == true))
+         if((this.method.getReturnType()
+                        .equals(Void.class)) || (this.method.getReturnType()
+                                                            .equals(void.class)))
          {
             this.result.setText("Execution succeed !");
          }

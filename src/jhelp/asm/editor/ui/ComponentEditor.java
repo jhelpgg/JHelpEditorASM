@@ -41,6 +41,7 @@ public class ComponentEditor
       // All we have to do here is too set the styles and list of key words
       // Other functionality are pilots/manage by CompilerEditorPane
       this.setBackground(ComponentEditor.WHITE);
+
       this.changeStyle(JHelpAutoStyledTextArea.DEFAULT_STYLE, "Arial", 24, false, false, false, Color.BLACK, ComponentEditor.WHITE);
       this.createStyle("KeyWord", "Arial", 24, true, false, false, new Color(0xFF30AE30, true), ComponentEditor.WHITE);
       this.createStyle("OpCode", "Arial", 24, true, false, false, new Color(0xFFAE3030, true), ComponentEditor.WHITE);
@@ -64,7 +65,8 @@ public class ComponentEditor
 
          for(final Field field : CompilerConstants.class.getDeclaredFields())
          {
-            if(field.getName().startsWith("ACCES") == true)
+            if(field.getName()
+                    .startsWith("ACCES"))
             {
                continue;
             }

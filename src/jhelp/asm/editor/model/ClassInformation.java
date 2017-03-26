@@ -67,7 +67,8 @@ public class ClassInformation
          return false;
       }
 
-      if(object.getClass().equals(ClassInformation.class) == false)
+      if(!object.getClass()
+                .equals(ClassInformation.class))
       {
          return false;
       }
@@ -108,7 +109,7 @@ public class ClassInformation
    {
       for(int index = this.methods.length - 1; index >= 0; index--)
       {
-         if(this.methods[index].equals(method) == true)
+         if(this.methods[index].equals(method))
          {
             return index;
          }

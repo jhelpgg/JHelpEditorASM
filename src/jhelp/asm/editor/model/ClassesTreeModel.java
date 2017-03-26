@@ -116,7 +116,7 @@ public class ClassesTreeModel
 
       synchronized(this.treeModelListeners)
       {
-         if(this.treeModelListeners.contains(treeModelListener) == false)
+         if(!this.treeModelListeners.contains(treeModelListener))
          {
             this.treeModelListeners.add(treeModelListener);
          }

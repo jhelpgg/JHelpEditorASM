@@ -116,7 +116,7 @@ public class ClassesTree
          {
             final Object object = path.getLastPathComponent();
 
-            if((object != null) && ((object instanceof Method) == true))
+            if((object != null) && ((object instanceof Method)))
             {
                this.openDialogFor((ClassInformation) path.getParentPath().getLastPathComponent(), (Method) object);
             }

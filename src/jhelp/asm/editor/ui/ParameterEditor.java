@@ -61,11 +61,11 @@ public class ParameterEditor
          'a', 'b', 'c', 'A', 'B', 'C', '0', '5', '.', '/', '*'
    };
    /** Component to show */
-   private JComponent               component;
+   private       JComponent    component;
    /** Class of parameter to edit */
-   private final Class<?>           parameterClass;
+   private final Class<?>      parameterClass;
    /** Parameter type */
-   private ParameterType            parameterType;
+   private final ParameterType parameterType;
 
    /**
     * Create a new instance of ParameterEditor
@@ -77,39 +77,39 @@ public class ParameterEditor
    {
       this.parameterClass = parameterClass;
 
-      if((boolean.class.equals(parameterClass) == true) || (Boolean.class.equals(parameterClass) == true))
+      if((boolean.class.equals(parameterClass)) || (Boolean.class.equals(parameterClass)))
       {
          this.parameterType = ParameterType.BOOLEAN;
       }
-      else if((char.class.equals(parameterClass) == true) || (Character.class.equals(parameterClass) == true))
+      else if((char.class.equals(parameterClass)) || (Character.class.equals(parameterClass)))
       {
          this.parameterType = ParameterType.CHAR;
       }
-      else if((byte.class.equals(parameterClass) == true) || (Byte.class.equals(parameterClass) == true))
+      else if((byte.class.equals(parameterClass)) || (Byte.class.equals(parameterClass)))
       {
          this.parameterType = ParameterType.BYTE;
       }
-      else if((short.class.equals(parameterClass) == true) || (Short.class.equals(parameterClass) == true))
+      else if((short.class.equals(parameterClass)) || (Short.class.equals(parameterClass)))
       {
          this.parameterType = ParameterType.SHORT;
       }
-      else if((int.class.equals(parameterClass) == true) || (Integer.class.equals(parameterClass) == true))
+      else if((int.class.equals(parameterClass)) || (Integer.class.equals(parameterClass)))
       {
          this.parameterType = ParameterType.INT;
       }
-      else if((long.class.equals(parameterClass) == true) || (Long.class.equals(parameterClass) == true))
+      else if((long.class.equals(parameterClass)) || (Long.class.equals(parameterClass)))
       {
          this.parameterType = ParameterType.LONG;
       }
-      else if((float.class.equals(parameterClass) == true) || (Float.class.equals(parameterClass) == true))
+      else if((float.class.equals(parameterClass)) || (Float.class.equals(parameterClass)))
       {
          this.parameterType = ParameterType.FLOAT;
       }
-      else if((double.class.equals(parameterClass) == true) || (Double.class.equals(parameterClass) == true))
+      else if((double.class.equals(parameterClass)) || (Double.class.equals(parameterClass)))
       {
          this.parameterType = ParameterType.DOUBLE;
       }
-      else if(String.class.equals(parameterClass) == true)
+      else if(String.class.equals(parameterClass))
       {
          this.parameterType = ParameterType.STRING;
       }
@@ -154,7 +154,7 @@ public class ParameterEditor
    {
       final Object value = ((JSpinner) this.component).getValue();
 
-      if((value == null) || ((value instanceof Integer) == false))
+      if((value == null) || (!(value instanceof Integer)))
       {
          return 0;
       }
@@ -196,6 +196,7 @@ public class ParameterEditor
          case BYTE:
             return (byte) this.obtainValueOfNumber();
          case CHAR:
+            //noinspection RedundantCast
             return (char) ((JComboBox<?>) this.component).getSelectedItem();
          case DOUBLE:
             return (double) this.obtainValueOfNumber();
